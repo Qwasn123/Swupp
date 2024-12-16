@@ -30,7 +30,7 @@
             </el-radio-group>
           </div>
         </div>
-        
+
         <!-- 性质筛选 -->
         <div class="flex items-center py-2">
           <span class="text-gray-600 font-medium w-16">性质：</span>
@@ -65,18 +65,18 @@
               class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             >
           </div>
-          
+
           <!-- 商品信息 -->
           <div class="p-3 space-y-2">
             <!-- 商品标题 -->
             <h3 class="text-sm text-gray-800 line-clamp-2 h-10">{{ item.title }}</h3>
-            
+
             <!-- 价格区域 -->
             <div class="flex items-end space-x-2">
               <span class="text-lg font-bold text-red-500">¥{{ item.price.toFixed(2) }}</span>
               <span class="text-xs text-gray-400 line-through">¥{{ (item.price * 1.2).toFixed(2) }}</span>
             </div>
-            
+
             <!-- 底部信息 -->
             <div class="flex items-center justify-between">
               <el-tag 
@@ -92,15 +92,16 @@
         </div>
       </div>
 
-      <!-- 加载更多 -->
-      <div v-if="hasMore && !loading" class="text-center mt-8">
-        <el-button 
-          type="primary" 
-          class="!rounded-full px-8" 
-          @click="loadMore"
-        >
-          加载更多
-        </el-button>
+      <!-- 翻页 -->
+      <div class="flex justify-center mt-8 mb-16">
+        <el-pagination
+          :default-page-size="pageSize"
+          :current-page="page"
+          @current-change="fetchItems"
+          :total="100"
+          layout="prev, pager, next"
+          background
+        />
       </div>
     </div>
   </div>
@@ -116,12 +117,14 @@ const natureFilter = ref('all')
 const items = ref([])
 const loading = ref(false)
 const page = ref(1)
-const pageSize = ref(20)
-const hasMore = ref(true)
+const pageSize = ref(10)
 
 // 获取商品列表
-const fetchItems = async (isLoadMore = false) => {
+const fetchItems = async (newPage) => {
   if (loading.value) return
+  if (newPage) {
+    page.value = newPage
+  }
   try {
     loading.value = true
     const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
@@ -138,14 +141,12 @@ const fetchItems = async (isLoadMore = false) => {
     })
 
     if (response.data.success) {
-      const responseData = response.data.data
-      if (isLoadMore) {
-        items.value = [...items.value, ...responseData]
-      } else {
-        items.value = responseData
-      }
-      // 如果返回的数据长度小于 pageSize，说明没有更多数据了
-      hasMore.value = responseData.length === pageSize.value
+      items.value = response.data.data
+      // 滚动到顶部
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
     } else {
       ElMessage.error(response.data.message || '获取商品列表失败')
     }
@@ -157,14 +158,6 @@ const fetchItems = async (isLoadMore = false) => {
   }
 }
 
-// 加载更多
-const loadMore = () => {
-  if (hasMore.value && !loading.value) {
-    page.value += 1
-    fetchItems(true)
-  }
-}
-
 // 查看详情
 const viewDetail = (item) => {
   console.log('查看商品详情:', item)
@@ -173,7 +166,6 @@ const viewDetail = (item) => {
 
 // 监听筛选条件变化
 watch([typeFilter, natureFilter], () => {
-  items.value = [] // 清空商品列表
   page.value = 1 // 重置页数
   fetchItems() // 重新加载数据
 })
@@ -194,5 +186,13 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+:deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+  background-color: var(--el-color-primary);
+}
+
+:deep(.el-pagination.is-background .el-pager li) {
+  border-radius: 9999px;
 }
 </style>

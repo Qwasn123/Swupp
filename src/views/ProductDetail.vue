@@ -1,0 +1,138 @@
+<template>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
+    <!-- 返回按钮 -->
+    <div class="mb-4">
+      <el-button 
+        type="default" 
+        @click="goBack"
+        class="flex items-center gap-2"
+      >
+        <el-icon><ArrowLeft /></el-icon>
+        返回
+      </el-button>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+      <!-- 商品图片展示区 -->
+      <div class="flex flex-col md:flex-row">
+        <div class="md:w-1/2 p-4">
+          <el-carousel height="400px" indicator-position="outside" class="rounded-lg overflow-hidden mb-2">
+            <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
+              <img :src="url" :alt="product.title" class="w-full h-full object-cover">
+            </el-carousel-item>
+          </el-carousel>
+        </div>
+
+        <!-- 商品信息区 -->
+        <div class="md:w-1/2 p-6">
+          <h1 class="text-2xl font-bold text-gray-900 mb-3">{{ product.title }}</h1>
+          
+          <div class="mb-6">
+            <p class="text-3xl font-bold text-red-600">
+              ¥{{ product.price }}
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">商品详情</h2>
+            <p class="text-gray-600">{{ product.description }}</p>
+          </div>
+
+          <div class="mb-6">
+            <div class="flex items-center gap-4">
+              <span class="text-gray-600">库存：{{ product.stock }}</span>
+            </div>
+          </div>
+
+          <!-- 联系卖家按钮 -->
+          <div class="mt-6">
+            <el-button type="primary" size="large" class="w-full" @click="contactSeller">
+              联系卖家
+            </el-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卖家信息区
+      <div class="border-t border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">卖家信息</h2>
+        <div class="flex items-center">
+          <el-avatar :size="50" :src="sellerAvatar" />
+          <div class="ml-4">
+            <p class="font-semibold">{{ sellerName }}</p>
+            <p class="text-sm text-gray-500">信用评分：{{ sellerRating }}</p>
+          </div>
+        </div>
+      </div> -->
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { ArrowLeft } from '@element-plus/icons-vue'
+import axios from 'axios'
+import defaultGoodsImg from '@/assets/goods/default-goods-img.png'
+
+const router = useRouter()
+const route = useRoute()
+const product = ref({})
+const imageUrls = ref([defaultGoodsImg]) // 默认使用默认图片
+const sellerName = ref('加载中...')
+const sellerRating = ref('--')
+const sellerAvatar = ref('')
+
+// 获取商品详情
+const fetchProductDetail = async () => {
+  try {
+    // 从localStorage获取商品列表
+    const goodsList = JSON.parse(localStorage.getItem('goods') || '[]')
+    // 查找对应ID的商品
+    const foundProduct = goodsList.find(item => item.id === parseInt(route.params.id))
+    
+    if (!foundProduct) {
+      throw new Error('商品不存在')
+    }
+
+    product.value = foundProduct
+    
+    // 处理图片URL
+    if (product.value.imageUrl && product.value.imageUrl.trim() !== '') {
+      imageUrls.value = product.value.imageUrl.split(',').filter(url => url.trim() !== '')
+    } else {
+      imageUrls.value = [defaultGoodsImg]
+    }
+  } catch (error) {
+    console.error('获取商品详情失败:', error)
+    ElMessage.error('获取商品详情失败')
+  }
+}
+
+
+
+// 联系卖家
+const contactSeller = () => {
+  // TODO: 实现联系卖家功能
+  ElMessage.info('联系卖家功能开发中...')
+}
+
+// 返回上一页
+const goBack = () => {
+  const lastPage = localStorage.getItem('lastMarketPage') || 1
+  router.push(`/market?page=${lastPage}`)
+}
+
+onMounted(() => {
+  fetchProductDetail()
+})
+</script>
+
+<style scoped>
+.el-carousel__item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+}
+</style>

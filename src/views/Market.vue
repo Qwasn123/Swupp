@@ -54,9 +54,12 @@
 
       <!-- 商品网格 -->
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        <div v-for="item in items" :key="item.id"
-          class="bg-white rounded-lg hover:shadow-lg transition-shadow duration-300 cursor-pointer group"
-          @click="viewDetail(item)">
+        <div 
+          v-for="item in filteredItems" 
+          :key="item.id" 
+          class="bg-white rounded-lg shadow-md overflow-hidden group cursor-pointer"
+          @click="goToDetail(item.id)"
+        >
           <!-- 商品图片 -->
           <div class="relative pt-[100%] rounded-t-lg overflow-hidden">
             <img 
@@ -108,10 +111,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
+import { useRouter, useRoute } from 'vue-router'
 import defaultGoodsImg from '@/assets/goods/default-goods-img.png'
+
+const router = useRouter()
+const route = useRoute()
 
 const typeFilter = ref('all')
 const natureFilter = ref('all')
@@ -148,6 +155,7 @@ const fetchItems = async (newPage) => {
         top: 0,
         behavior: 'smooth'
       })
+      localStorage.setItem('goods', JSON.stringify(items.value))
     } else {
       ElMessage.error(response.data.message || '获取商品列表失败')
     }
@@ -157,6 +165,13 @@ const fetchItems = async (newPage) => {
   } finally {
     loading.value = false
   }
+}
+
+// 跳转到商品详情页
+const goToDetail = (id) => {
+  // 保存当前页码
+  localStorage.setItem('lastMarketPage', page.value)
+  router.push(`/product/${id}`)
 }
 
 // 查看详情
@@ -171,9 +186,31 @@ watch([typeFilter, natureFilter], () => {
   fetchItems() // 重新加载数据
 })
 
-// 初始化数据
+// 监听路由参数变化
+watch(
+  () => route.query.page,
+  (newPage) => {
+    if (newPage) {
+      page.value = parseInt(newPage)
+      fetchItems()
+    }
+  }
+)
+
+// 初始化时从 URL 参数获取页码
 onMounted(() => {
+  const pageFromUrl = parseInt(route.query.page) || 1
+  page.value = pageFromUrl
   fetchItems()
+})
+
+// 计算属性：根据筛选条件过滤商品
+const filteredItems = computed(() => {
+  return items.value.filter(item => {
+    if (typeFilter.value !== 'all' && item.type !== typeFilter.value) return false
+    if (natureFilter.value !== 'all' && item.nature !== natureFilter.value) return false
+    return true
+  })
 })
 </script>
 

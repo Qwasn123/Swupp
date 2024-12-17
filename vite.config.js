@@ -42,6 +42,16 @@ export default defineConfig({
           'Access-Control-Allow-Origin': '*'
         }
       },
+      '/task': {
+        target: 'https://swupp.swu.social',
+        changeOrigin: true,
+        secure: false,
+        rejectUnauthorized: false,
+        ws: true,
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      },
       '/upload': {
         target: 'https://upload.swu.social',
         changeOrigin: true,

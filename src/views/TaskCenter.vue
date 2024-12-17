@@ -40,28 +40,25 @@
 
       <!-- 任务卡片列表 -->
       <div class="px-4">
-        <div v-for="task in tasks" :key="task.id" 
-             class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-3">
-          <div class="flex items-start">
-            <img :src="task.avatar" class="w-10 h-10 rounded-full mr-3" />
+        <div v-for="task in tasks" :key="task.id" class="bg-white rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-start space-x-4">
+            <el-avatar :size="50" :src="task.avatar" />
             <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <span class="font-medium">{{ task.title }}</span>
-                <span class="text-[#7269ef] font-bold">¥{{ task.price }}</span>
+              <div class="flex justify-between items-start">
+                <h3 class="text-lg font-medium">{{ task.title }}</h3>
+                <div class="text-orange-500 font-medium">¥{{ task.reward }}</div>
               </div>
-              <p class="text-gray-500 text-sm mt-1 line-clamp-2">{{ task.description }}</p>
-              <div class="flex items-center justify-between mt-2">
-                <div class="flex items-center text-xs text-gray-400">
-                  <span>{{ task.publisher }}</span>
-                  <span class="mx-2">·</span>
-                  <span>{{ task.time }}</span>
+              <div class="mt-2">
+                <p class="text-gray-600 text-sm max-w-[85%]">{{ task.description }}</p>
+                <div class="flex justify-between items-center mt-3">
+                  <span class="text-gray-400 text-xs">{{ formatTime(task.createTime) }}</span>
+                  <el-button 
+                    class="!bg-[#7269ef] hover:!bg-[#8982f1] border-none" 
+                    type="primary" 
+                    size="small" 
+                    round
+                  >接单</el-button>
                 </div>
-                <el-button 
-                  class="!bg-[#7269ef] hover:!bg-[#8982f1] border-none" 
-                  type="primary" 
-                  size="small" 
-                  round
-                >接单</el-button>
               </div>
             </div>
           </div>
@@ -72,40 +69,79 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const searchQuery = ref('')
+const tasks = ref([])
+const page = ref(1)
+const pageSize = ref(10)
+const typeFilter = ref('all')
+const natureFilter = ref('all')
+const loading = ref(false)
 
-const tasks = [
-  {
-    id: 1,
-    avatar: 'https://placeholder.co/100',
-    title: '帮忙取快递',
-    price: 5,
-    description: '菜鸟驿站有一个快递，需要帮忙取一下，送到xxx宿舍楼下即可',
-    publisher: '张同学',
-    time: '10分钟前'
-  },
-  {
-    id: 2,
-    avatar: 'https://placeholder.co/100',
-    title: '高数辅导',
-    price: 50,
-    description: '期末考试快到了，需要一位学霸帮忙辅导高等数学，主要是微积分部分',
-    publisher: '李同学',
-    time: '30分钟前'
-  },
-  {
-    id: 3,
-    avatar: 'https://placeholder.co/100',
-    title: '帮买午餐',
-    price: 8,
-    description: '中午有课，需要帮忙从学生食堂打包午餐，要求12点前送到',
-    publisher: '王同学',
-    time: '1小时前'
+// 格式化时间
+const formatTime = (timeStr) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}.${month}.${day} ${hours}:${minutes}`
+}
+
+// 获取任务列表
+const fetchTasks = async (newPage) => {
+  if (loading.value) return
+  if (newPage) {
+    page.value = newPage
   }
-]
+  try {
+    loading.value = true
+    const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
+    const response = await axios.get('/task/list', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization'
+      },
+      params: {
+        page: page.value,
+        size: pageSize.value,
+        type: typeFilter.value === 'all' ? undefined : typeFilter.value,
+        nature: natureFilter.value === 'all' ? undefined : natureFilter.value
+      }
+    })
+
+    if (response.data.success) {
+      tasks.value = response.data.data
+      // 滚动到顶部
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+      localStorage.setItem('tasks', JSON.stringify(tasks.value))
+    } else {
+      ElMessage.error(response.data.message || '获取任务列表失败')
+    }
+  } catch (error) {
+    console.error('获取任务列表失败:', error)
+    ElMessage.error('获取任务列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 组件挂载时获取任务列表
+onMounted(() => {
+  fetchTasks()
+})
 </script>
 
 <style scoped>

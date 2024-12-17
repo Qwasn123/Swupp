@@ -79,13 +79,13 @@
 
             <!-- 底部信息 -->
             <div class="flex items-center justify-between">
-              <el-tag 
+              <!-- <el-tag 
                 size="small" 
                 :type="item.status === 'ON_SALE' ? 'success' : 'info'"
                 class="!rounded-full"
               >
                 {{ item.status === 'ON_SALE' ? '在售' : (item.status === 'SOLD' ? '已售' : '未知') }}
-              </el-tag>
+              </el-tag> -->
               <span class="text-xs text-gray-400">库存: {{ item.stock }}</span>
             </div>
           </div>

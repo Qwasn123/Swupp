@@ -223,7 +223,7 @@ const submitItem = async () => {
     // 上传所有图片
     const uploadPromises = fileList.value.map(file => uploadImageToOSS(file))
     const imageUrls = await Promise.all(uploadPromises)
-
+    // console.log('上传的图片URL:', imageUrls)
     // 构建提交数据
     const submitData = {
       title: itemForm.value.title,
@@ -232,7 +232,7 @@ const submitItem = async () => {
       stock: itemForm.value.stock,
       price: itemForm.value.price,
       sellerId: 5, // 这里应该从用户状态中获取
-      image_url: imageUrls.join(',')
+      imageUrl: imageUrls.join(',')
     }
 
     const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''

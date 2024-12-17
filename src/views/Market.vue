@@ -60,10 +60,10 @@
           <!-- 商品图片 -->
           <div class="relative pt-[100%] rounded-t-lg overflow-hidden">
             <img 
-              :src="item.imageUrl ? item.imageUrl.split(',')[0] : ''" 
+              :src="item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl.split(',')[0] : defaultGoodsImg" 
               :alt="item.title"
               class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            >
+            />
           </div>
 
           <!-- 商品信息 -->
@@ -111,6 +111,7 @@
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
+import defaultGoodsImg from '@/assets/goods/default-goods-img.png'
 
 const typeFilter = ref('all')
 const natureFilter = ref('all')

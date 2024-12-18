@@ -78,15 +78,30 @@
           </div>
         </div>
       </div>
+      <!-- 翻页 -->
+      <div class="flex justify-center mt-8 mb-8">
+        <el-pagination
+          :default-page-size="pageSize"
+          :current-page="page"
+          @current-change="fetchTasks"
+          :total="100"
+          layout="prev, pager, next"
+          background
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 const searchQuery = ref('')
 const tasks = ref([])
@@ -150,8 +165,21 @@ const fetchTasks = async (newPage) => {
   }
 }
 
-// 组件挂载时获取任务列表
+// 监听路由参数变化
+watch(
+  () => route.query.page,
+  (newPage) => {
+    if (newPage) {
+      page.value = parseInt(newPage)
+      fetchTasks()
+    }
+  }
+)
+
+// 初始化时从 URL 参数获取页码
 onMounted(() => {
+  const pageFromUrl = parseInt(route.query.page) || 1
+  page.value = pageFromUrl
   fetchTasks()
 })
 </script>
@@ -179,5 +207,13 @@ onMounted(() => {
 
 .search-input :deep(.el-input__wrapper) {
   background: transparent !important;
+}
+
+:deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+  background-color: var(--el-color-primary);
+}
+
+:deep(.el-pagination.is-background .el-pager li) {
+  border-radius: 9999px;
 }
 </style>

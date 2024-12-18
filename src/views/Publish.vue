@@ -5,35 +5,74 @@
         <!-- 切换发布类型 -->
         <el-tabs v-model="activeTab" class="mb-4">
           <el-tab-pane label="发布任务" name="task">
-            <el-form :model="taskForm" label-width="80px">
-              <el-form-item label="标题">
+            <el-form :model="taskForm" label-width="100px" :rules="taskRules" ref="taskFormRef">
+              <el-form-item label="标题" prop="title">
                 <el-input v-model="taskForm.title" placeholder="请输入任务标题"/>
               </el-form-item>
-              <el-form-item label="定价">
-                <el-input-number v-model="taskForm.price" :min="0" :precision="2"/>
+              <el-form-item label="报酬" prop="reward">
+                <el-input-number v-model="taskForm.reward" :min="0" :precision="2" :step="10"/>
               </el-form-item>
-              <el-form-item label="类型">
-                <el-select v-model="taskForm.type" placeholder="请选择类型">
-                  <el-option label="学习" value="study"/>
-                  <el-option label="生活" value="life"/>
-                  <el-option label="工作" value="work"/>
+              <el-form-item label="类型" prop="categoryId">
+                <el-select v-model="taskForm.categoryId" placeholder="请选择类型">
+                  <el-option 
+                    v-for="category in categories" 
+                    :key="category.id" 
+                    :label="category.name" 
+                    :value="category.id"
+                  />
                 </el-select>
               </el-form-item>
-              <el-form-item label="描述">
+              <el-form-item label="截止日期" prop="deadline">
+                <el-date-picker
+                  v-model="taskForm.deadline"
+                  type="datetime"
+                  placeholder="选择截止日期"
+                  :min-date="new Date()"
+                  format="YYYY-MM-DD HH:mm"
+                  value-format="YYYY-MM-DDTHH:mm:ss"
+                />
+              </el-form-item>
+              <el-form-item label="预计工时" prop="estimatedHours">
+                <el-input-number v-model="taskForm.estimatedHours" :min="0.5" :max="168" :step="0.5"/>
+              </el-form-item>
+              <el-form-item label="地点" prop="location">
+                <el-input v-model="taskForm.location" placeholder="请输入任务地点"/>
+              </el-form-item>
+              <el-form-item label="描述" prop="description">
                 <el-input v-model="taskForm.description" type="textarea" rows="4"/>
               </el-form-item>
-              <el-form-item label="头图">
+              <el-form-item label="任务图片" prop="images">
                 <el-upload
-                  class="avatar-uploader"
+                  v-model:file-list="taskFileList"
+                  class="upload-demo"
                   action="#"
-                  :show-file-list="false"
-                  :auto-upload="false">
-                  <img v-if="taskForm.image" :src="taskForm.image" class="avatar">
-                  <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+                  list-type="picture-card"
+                  :auto-upload="false"
+                  :on-change="handleTaskImageChange"
+                  multiple
+                >
+                  <el-icon><Plus /></el-icon>
+                  <template #tip>
+                    <div class="text-xs text-gray-400 mt-1">
+                      支持多张图片上传，最多5张
+                    </div>
+                  </template>
                 </el-upload>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary">发布任务</el-button>
+                <el-row :gutter="20">
+                  <el-col :span="8">
+                    <el-checkbox v-model="taskForm.isUrgent">加急</el-checkbox>
+                  </el-col>
+                  <el-col :span="8">
+                    <el-checkbox v-model="taskForm.isOnTop">置顶</el-checkbox>
+                  </el-col>
+                </el-row>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :loading="isTaskSubmitting" @click="submitTask">
+                  {{ isTaskSubmitting ? '发布中...' : '发布任务' }}
+                </el-button>
               </el-form-item>
             </el-form>
           </el-tab-pane>
@@ -113,12 +152,21 @@ const categories = [
   { id: 5, name: '其他' }
 ]
 
+const taskFormRef = ref(null)
+const isTaskSubmitting = ref(false)
+const taskFileList = ref([])
+
 const taskForm = ref({
   title: '',
-  price: 0,
-  type: '',
+  reward: 0,
+  categoryId: '',
   description: '',
-  image: ''
+  deadline: '',
+  estimatedHours: 1,
+  location: '',
+  isUrgent: false,
+  isOnTop: false,
+  imageUrls: ''
 })
 
 const itemForm = ref({
@@ -152,11 +200,47 @@ const itemRules = {
   ]
 }
 
+const taskRules = {
+  title: [
+    { required: true, message: '请输入任务标题', trigger: 'blur' },
+    { min: 2, max: 50, message: '标题长度应在2-50个字符之间', trigger: 'blur' }
+  ],
+  reward: [
+    { required: true, message: '请输入任务报酬', trigger: 'blur' },
+    { type: 'number', min: 0.01, message: '报酬必须大于0', trigger: 'blur' }
+  ],
+  categoryId: [
+    { required: true, message: '请选择任务类型', trigger: 'change' }
+  ],
+  deadline: [
+    { required: true, message: '请选择截止日期', trigger: 'change' }
+  ],
+  estimatedHours: [
+    { required: true, message: '请输入预计工时', trigger: 'blur' }
+  ],
+  location: [
+    { required: true, message: '请输入任务地点', trigger: 'blur' }
+  ],
+  description: [
+    { required: true, message: '请输入任务描述', trigger: 'blur' },
+    { min: 10, max: 500, message: '描述长度应在10-500个字符之间', trigger: 'blur' }
+  ]
+}
+
 // 处理图片变化
 const handleImageChange = (uploadFile) => {
   if (fileList.value.length > 9) {
     ElMessage.warning('最多只能上传9张图片')
     fileList.value = fileList.value.slice(0, 9)
+    return
+  }
+}
+
+// 处理任务图片变化
+const handleTaskImageChange = (uploadFile) => {
+  if (taskFileList.value.length > 5) {
+    ElMessage.warning('最多只能上传5张图片')
+    taskFileList.value = taskFileList.value.slice(0, 5)
     return
   }
 }
@@ -256,6 +340,64 @@ const submitItem = async () => {
     ElMessage.error(error.message || '发布失败，请重试')
   } finally {
     isSubmitting.value = false
+  }
+}
+
+// 提交任务
+const submitTask = async () => {
+  if (!taskFormRef.value) return
+  
+  try {
+    await taskFormRef.value.validate()
+    
+    if (taskFileList.value.length === 0) {
+      ElMessage.warning('请至少上传一张任务相关图片')
+      return
+    }
+
+    isTaskSubmitting.value = true
+
+    // 上传所有图片
+    const uploadPromises = taskFileList.value.map(file => uploadImageToOSS(file))
+    const imageUrls = await Promise.all(uploadPromises)
+    const publisherId = localStorage.getItem('id')
+
+    // 构建提交数据
+    const submitData = {
+      title: taskForm.value.title,
+      description: taskForm.value.description,
+      categoryId: taskForm.value.categoryId,
+      reward: taskForm.value.reward,
+      deadline: taskForm.value.deadline,
+      estimatedHours: taskForm.value.estimatedHours,
+      location: taskForm.value.location,
+      isUrgent: taskForm.value.isUrgent,
+      isOnTop: taskForm.value.isOnTop,
+      publisherId: publisherId,
+      imageUrls: imageUrls.join(',')
+    }
+
+    const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
+    const response = await axios.post('/task/publish', submitData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.data.success) {
+      ElMessage.success(response.data.message || '任务发布成功')
+      // 重置表单
+      taskFormRef.value.resetFields()
+      taskFileList.value = []
+    } else {
+      throw new Error(response.data.message || '发布失败')
+    }
+  } catch (error) {
+    console.error('发布任务失败:', error)
+    ElMessage.error(error.message || '发布失败，请重试')
+  } finally {
+    isTaskSubmitting.value = false
   }
 }
 </script>

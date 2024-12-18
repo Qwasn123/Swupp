@@ -31,34 +31,48 @@
       </el-carousel>
     </div>
 
-    <!-- 任务列表 -->
-    <div class="mt-6">
-      <!-- 标题栏 -->
-      <div class="flex items-center justify-between px-4 mb-4">
-        <h2 class="text-lg font-bold">任务列表</h2>
-      </div>
-
-      <!-- 任务卡片列表 -->
-      <div class="px-4">
-        <div v-for="task in tasks" :key="task.id" class="bg-white rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
-          <div class="flex items-start space-x-4">
-            <el-avatar :size="50" :src="task.avatar" />
-            <div class="flex-1">
-              <div class="flex justify-between items-start">
-                <h3 class="text-lg font-medium">{{ task.title }}</h3>
-                <div class="text-orange-500 font-medium">¥{{ task.reward }}</div>
+    <!-- 任务卡片列表 -->
+    <div class="px-4 max-w-2xl mx-auto">
+      <h2 class="text-xl font-bold mb-4 mt-4 text-left">任务中心</h2>
+      <div v-for="task in tasks" :key="task.id" class="bg-white rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-start space-x-4">
+          <div class="w-[50px] h-[50px] rounded-lg overflow-hidden flex-shrink-0">
+            <img 
+              :src="task.imageUrls ? task.imageUrls.split(',')[0] : ''" 
+              class="w-full h-full object-cover"
+              alt="任务图片"
+            />
+          </div>
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <h3 class="text-lg font-medium">{{ task.title }}</h3>
+              <div class="text-orange-500 font-medium">¥{{ task.reward }}</div>
+            </div>
+            <div class="mt-2">
+              <p class="text-gray-600 text-sm max-w-[85%]">{{ task.description }}</p>
+              <!-- 任务图片展示 -->
+              <div v-if="task.imageUrls" class="mt-2 flex gap-2 overflow-x-auto">
+                <el-image
+                  v-for="(url, index) in task.imageUrls.split(',').slice(1)"
+                  :key="index"
+                  :src="url"
+                  :preview-src-list="task.imageUrls.split(',').slice(1)"
+                  fit="cover"
+                  class="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                />
               </div>
-              <div class="mt-2">
-                <p class="text-gray-600 text-sm max-w-[85%]">{{ task.description }}</p>
-                <div class="flex justify-between items-center mt-3">
+              <div class="flex justify-between items-center mt-3">
+                <div class="flex items-center gap-4">
                   <span class="text-gray-400 text-xs">{{ formatTime(task.createTime) }}</span>
-                  <el-button 
-                    class="!bg-[#7269ef] hover:!bg-[#8982f1] border-none" 
-                    type="primary" 
-                    size="small" 
-                    round
-                  >接单</el-button>
+                  <span class="text-gray-400 text-xs">预计{{ task.estimatedHours }}小时</span>
+                  <span class="text-gray-400 text-xs">{{ task.location }}</span>
                 </div>
+                <el-button 
+                  class="!bg-[#7269ef] hover:!bg-[#8982f1] border-none" 
+                  type="primary" 
+                  size="small" 
+                  round
+                >接单</el-button>
               </div>
             </div>
           </div>
@@ -86,12 +100,11 @@ const loading = ref(false)
 const formatTime = (timeStr) => {
   if (!timeStr) return ''
   const date = new Date(timeStr)
-  const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}.${month}.${day} ${hours}:${minutes}`
+  return `${month}.${day} ${hours}:${minutes}`
 }
 
 // 获取任务列表
@@ -105,11 +118,7 @@ const fetchTasks = async (newPage) => {
     const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
     const response = await axios.get('/task/list', {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization'
+        'Authorization': `Bearer ${token}`
       },
       params: {
         page: page.value,
@@ -120,13 +129,16 @@ const fetchTasks = async (newPage) => {
     })
 
     if (response.data.success) {
-      tasks.value = response.data.data
-      // 滚动到顶部
+      // 处理任务数据
+      tasks.value = response.data.data.map(task => ({
+        ...task,
+        imageUrls: task.imageUrls || ''  // 确保imageUrls存在
+      }))
+      
       window.scrollTo({
         top: 0,
         behavior: 'smooth'
       })
-      localStorage.setItem('tasks', JSON.stringify(tasks.value))
     } else {
       ElMessage.error(response.data.message || '获取任务列表失败')
     }

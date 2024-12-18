@@ -87,6 +87,7 @@ const handleLogin = async () => {
     const response = await login(studentId.value, password.value)
     if (response.data?.success) {
       ElMessage.success('登录成功')
+      localStorage.setItem('id', response.data?.data?.id)
       router.replace('/')
     } else {
       ElMessage.error(response.data?.message || '登录失败，请检查学号和密码')

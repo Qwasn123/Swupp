@@ -30,6 +30,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/task/:id',
+    name: 'TaskDetail',
+    component: () => import('../views/TaskDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/publish',
     name: 'Publish',
     component: () => import('../views/Publish.vue'),

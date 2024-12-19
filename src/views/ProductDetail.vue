@@ -24,7 +24,15 @@
 
         <!-- 商品信息区 -->
         <div class="md:w-1/2 p-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-3">{{ product.title }}</h1>
+          <div class="flex justify-between items-start">
+            <h1 class="text-2xl font-bold text-gray-900">{{ product.title }}</h1>
+            <el-tag 
+              :type="getStatusType(product.status)"
+              class="ml-4"
+            >
+              {{ getStatusText(product.status) }}
+            </el-tag>
+          </div>
           
           <div class="mb-6">
             <p class="text-3xl font-bold text-red-600">
@@ -43,10 +51,14 @@
             </div>
           </div>
 
-          <!-- 联系卖家按钮 -->
+          <!-- 购买按钮 -->
           <div class="mt-6">
-            <el-button type="primary" size="large" class="w-full" @click="contactSeller">
-              联系卖家
+            <el-button 
+              type="primary" 
+              class="w-full !bg-[#7269ef] hover:!bg-[#8982f1] border-none"
+              :disabled="!canBuyProduct(product)"
+            >
+              {{ getActionButtonText(product?.status) }}
             </el-button>
           </div>
         </div>
@@ -83,6 +95,41 @@ const sellerName = ref('加载中...')
 const sellerRating = ref('--')
 const sellerAvatar = ref('')
 
+// 获取状态类型
+const getStatusType = (status) => {
+  const typeMap = {
+    'ON_SALE': 'success',
+    'SOLD': 'info',
+    'OFF_SHELF': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const textMap = {
+    'ON_SALE': '在售',
+    'SOLD': '已售出',
+    'OFF_SHELF': '已下架'
+  }
+  return textMap[status] || status
+}
+
+// 检查是否可以购买
+const canBuyProduct = (product) => {
+  return product && product.status === 'ON_SALE' && product.stock > 0
+}
+
+// 获取操作按钮文本
+const getActionButtonText = (status) => {
+  const textMap = {
+    'ON_SALE': '立即购买',
+    'SOLD': '已售罄',
+    'OFF_SHELF': '已下架'
+  }
+  return textMap[status] || '立即购买'
+}
+
 // 获取商品详情
 const fetchProductDetail = async () => {
   try {
@@ -108,8 +155,6 @@ const fetchProductDetail = async () => {
     ElMessage.error('获取商品详情失败')
   }
 }
-
-
 
 // 联系卖家
 const contactSeller = () => {

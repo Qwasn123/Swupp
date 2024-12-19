@@ -38,7 +38,10 @@
     <!-- 任务卡片列表 -->
     <div class="px-4 max-w-2xl mx-auto">
       <h2 class="text-xl font-bold mb-4 mt-4 text-left">任务中心</h2>
-      <div v-for="task in tasks" :key="task.id" class="bg-white rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+      <div v-for="task in tasks" :key="task.id" 
+        class="bg-white rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        @click="router.push(`/task/${task.id}`)"
+      >
         <div class="flex items-start space-x-4">
           <div class="w-[50px] h-[50px] rounded-lg overflow-hidden flex-shrink-0">
             <img 
@@ -50,7 +53,12 @@
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <h3 class="text-lg font-medium">{{ task.title }}</h3>
-              <div class="text-orange-500 font-medium">¥{{ task.reward }}</div>
+              <div class="flex items-center gap-2">
+                <el-tag :type="getStatusType(task.status)" size="small">
+                  {{ getStatusText(task.status) }}
+                </el-tag>
+                <div class="text-orange-500 font-medium">¥{{ task.reward }}</div>
+              </div>
             </div>
             <div class="mt-2">
               <p class="text-gray-600 text-sm max-w-[85%]">{{ task.description }}</p>
@@ -126,12 +134,40 @@ const formatTime = (timeStr) => {
   return `${month}.${day} ${hours}:${minutes}`
 }
 
+// 获取状态类型
+const getStatusType = (status) => {
+  const typeMap = {
+    'PENDING': 'primary',
+    'ACCEPTED': 'success',
+    'IN_PROGRESS': 'warning',
+    'COMPLETED': 'info',
+    'CANCELLED': 'danger',
+    'EXPIRED': 'info'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const textMap = {
+    'PENDING': '待接单',
+    'ACCEPTED': '已接单',
+    'IN_PROGRESS': '进行中',
+    'COMPLETED': '已完成',
+    'CANCELLED': '已取消',
+    'EXPIRED': '已过期'
+  }
+  return textMap[status] || status
+}
+
 // 获取任务列表
 const fetchTasks = async (newPage) => {
   if (loading.value) return
   if (newPage) {
     page.value = newPage
   }
+  // 保存当前页码
+  localStorage.setItem('lastTaskPage', page.value.toString())
   try {
     loading.value = true
     const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''

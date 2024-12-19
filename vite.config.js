@@ -76,6 +76,16 @@ export default defineConfig({
         target: 'http://data.swu.social',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/data-api/, '')
+      },
+      '/search': {
+        target: 'https://swupp.swu.social',
+        changeOrigin: true,
+        secure: false,
+        rejectUnauthorized: false,
+        ws: true,
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
       }
     }
   }

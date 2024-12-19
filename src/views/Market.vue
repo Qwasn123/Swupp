@@ -6,10 +6,16 @@
         <div class="flex items-center space-x-4">
           <div class="flex-1">
             <el-input
-              placeholder="搜索商品"
+              v-model="searchKeyword"
+              placeholder="搜索商品..."
               class="w-full"
-              prefix-icon="el-icon-search"
-            />
+              clearable
+              @input="handleSearch"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
           </div>
         </div>
       </div>
@@ -116,6 +122,7 @@ import axios from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import defaultGoodsImg from '@/assets/goods/default-goods-img.png'
+import { Search } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -126,6 +133,7 @@ const items = ref([])
 const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(10)
+const searchKeyword = ref('')
 
 // 获取商品列表
 const fetchItems = async (newPage) => {
@@ -196,6 +204,45 @@ watch(
     }
   }
 )
+
+// 监听搜索关键词变化
+watch(searchKeyword, (newKeyword) => {
+  if (!newKeyword.trim()) {
+    return
+  }
+  handleSearch()
+})
+
+// 搜索商品
+const handleSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    return
+  }
+
+  loading.value = true
+  const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
+  try {
+    const response = await axios.get('/search/products/quickSearch', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      params: {
+        keyword: searchKeyword.value
+      }
+    })
+
+    if (response.data?.success) {
+      items.value = response.data.data
+    } else {
+      ElMessage.warning(response.data?.message || '搜索失败')
+    }
+  } catch (error) {
+    console.error('Search error:', error)
+    ElMessage.error('搜索失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 初始化时从 URL 参数获取页码
 onMounted(() => {

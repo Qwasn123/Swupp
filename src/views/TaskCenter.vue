@@ -5,15 +5,19 @@
       <div class="relative">
         <div class="flex bg-white/90 backdrop-blur-sm rounded-full overflow-hidden shadow-lg">
           <el-input
-            v-model="searchQuery"
+            v-model="searchKeyword"
             placeholder="搜索任务"
             class="flex-1 !border-none !shadow-none search-input"
+            @keyup.enter="handleSearch"
           >
             <template #prefix>
               <el-icon class="text-[#7269ef]"><Search /></el-icon>
             </template>
           </el-input>
-          <div class="px-4 py-2 bg-[#7269ef] text-white font-medium cursor-pointer hover:bg-[#8982f1] transition-colors flex items-center">
+          <div 
+            class="px-4 py-2 bg-[#7269ef] text-white font-medium cursor-pointer hover:bg-[#8982f1] transition-colors flex items-center"
+            @click="handleSearch"
+          >
             搜索
           </div>
         </div>
@@ -103,7 +107,7 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
-const searchQuery = ref('')
+const searchKeyword = ref('')
 const tasks = ref([])
 const page = ref(1)
 const pageSize = ref(10)
@@ -160,6 +164,37 @@ const fetchTasks = async (newPage) => {
   } catch (error) {
     console.error('获取任务列表失败:', error)
     ElMessage.error('获取任务列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 搜索任务
+const handleSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    return
+  }
+
+  loading.value = true
+  const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
+  try {
+    const response = await axios.get('/search/tasks/quickSearch', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      params: {
+        keyword: searchKeyword.value
+      }
+    })
+
+    if (response.data?.success) {
+      tasks.value = response.data.data
+    } else {
+      ElMessage.warning(response.data?.message || '搜索失败')
+    }
+  } catch (error) {
+    console.error('Search error:', error)
+    ElMessage.error('搜索失败，请稍后重试')
   } finally {
     loading.value = false
   }

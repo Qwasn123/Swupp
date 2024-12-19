@@ -27,10 +27,8 @@
     <!-- 轮播图 -->
     <div class="px-4 mt-4">
       <el-carousel height="150px" :interval="3000" type="card">
-        <el-carousel-item v-for="item in 4" :key="item">
-          <div class="bg-gradient-to-r from-[#7269ef] to-[#9c95f5] h-full rounded-lg flex items-center justify-center text-white">
-            活动广告位 {{ item }}
-          </div>
+        <el-carousel-item v-for="item in carouselImages" :key="item.title">
+          <img :src="item.url" :alt="item.title" class="w-full h-full object-cover rounded-lg">
         </el-carousel-item>
       </el-carousel>
     </div>
@@ -111,6 +109,10 @@ import { Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
+import carousel1 from '@/assets/carousel/1.png'
+import carousel2 from '@/assets/carousel/2.svg'
+import carousel3 from '@/assets/carousel/3.svg'
+import carousel4 from '@/assets/carousel/4.svg'
 
 const router = useRouter()
 const route = useRoute()
@@ -122,6 +124,13 @@ const pageSize = ref(10)
 const typeFilter = ref('all')
 const natureFilter = ref('all')
 const loading = ref(false)
+
+const carouselImages = [
+  { url: carousel1, title: '校园任务平台' },
+  { url: carousel2, title: '轻松发布任务' },
+  { url: carousel3, title: '快速接单赚钱' },
+  { url: carousel4, title: '安全可靠保障' }
+]
 
 // 格式化时间
 const formatTime = (timeStr) => {

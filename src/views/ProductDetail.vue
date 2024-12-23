@@ -53,7 +53,7 @@
           </div>
 
           <!-- 购买按钮 -->
-          <div class="mt-6">
+          <!-- <div class="mt-6">
             <el-button
               type="primary"
               class="w-full !bg-[#7269ef] hover:!bg-[#8982f1] border-none"
@@ -61,7 +61,7 @@
             >
               {{ getActionButtonText(product?.status) }}
             </el-button>
-          </div>
+          </div> -->
           <div class="mt-6">
             <el-button
               type="primary"

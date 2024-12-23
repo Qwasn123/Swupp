@@ -178,7 +178,7 @@
             </div>
             <div class="flex mt-2 items-center">
               <p class="text-sm text-gray-600 mr-3">
-                <el-button type="primary" v-if="productDetail">购买</el-button>
+                <el-button type="primary" v-if="productDetail" @click="buyProduct">购买</el-button>
                 <el-button type="primary" v-if="taskDetail" @click="acceptTask">接单</el-button>
               </p>
               <p class="text-sm text-gray-600">
@@ -652,6 +652,105 @@ const acceptTask = async () => {
   } catch (error) {
     console.error("Failed to accept task:", error);
     ElMessage.error("任务接受失败，请稍后重试");
+  }
+};
+
+const buyProduct = async () => {
+  if (!productDetail.value) {
+    ElMessage.warning("请先选择商品");
+    return;
+  }
+
+  try {
+    // 弹出购买信息输入框
+    await ElMessageBox.confirm(`
+      <div style="margin-bottom: 15px;">
+        <p style="margin-bottom: 10px;">商品：${productDetail.value.title}</p>
+        <p style="margin-bottom: 10px;">单价：￥${productDetail.value.price}</p>
+        <p style="color: #666;">库存：${productDetail.value.stock}</p>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px;">购买数量：</label>
+        <input 
+          type="number" 
+          class="el-input__inner" 
+          min="1" 
+          max="${productDetail.value.stock}"
+          value="1"
+          id="buyQuantity"
+          style="width: 100%;"
+        >
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 5px;">备注：</label>
+        <textarea 
+          class="el-input__inner" 
+          style="min-height: 60px; width: 100%;"
+          placeholder="请输入备注信息"
+          id="buyRemark"
+        ></textarea>
+      </div>
+    `, {
+      title: '确认购买',
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      dangerouslyUseHTMLString: true,
+      beforeClose: (action, instance, done) => {
+        if (action === 'confirm') {
+          const quantity = parseInt(document.getElementById('buyQuantity').value);
+          if (isNaN(quantity) || quantity < 1) {
+            ElMessage.warning('请输入有效的购买数量');
+            return;
+          }
+          if (quantity > productDetail.value.stock) {
+            ElMessage.warning('购买数量不能超过库存');
+            return;
+          }
+        }
+        done();
+      },
+      customClass: 'buy-dialog'
+    });
+
+    const quantity = parseInt(document.getElementById('buyQuantity').value);
+    const remark = document.getElementById('buyRemark').value;
+
+    console.log('Product Detail:', productDetail.value);  
+
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("DoorKey="))
+      ?.split("=")[1] || "";
+
+    const response = await axios.post(`/secondhand/${productDetail.value.id}/buy`, {
+      productId: productDetail.value.id,
+      buyerId: localStorage.getItem("id"),
+      sellerId: productDetail.value.seller.id,  
+      price: productDetail.value.price,
+      quantity: quantity,
+      remark: remark,
+      contactInformationId: 1,
+      isPaid: true
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      }
+    });
+
+    ElMessage.success("商品购买成功");
+    ElMessageBox.alert(
+      '现在可以和商家互换联系方式啦~',
+      '提示',
+      {
+        confirmButtonText: '好的',
+        type: 'success',
+      }
+    );
+  } catch (error) {
+    if (error === 'cancel') return;
+    console.error("Failed to buy product:", error);
+    ElMessage.error("商品购买失败，请稍后重试");
   }
 };
 

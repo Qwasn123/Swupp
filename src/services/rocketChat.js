@@ -228,17 +228,6 @@ class RocketChatService {
             reject(response.error);
           } else {
             resolve(response.result);
-            // Also notify as a new message for immediate UI update
-            this.notifyNewMessage({
-              _id: response.result._id,
-              rid: roomId,
-              msg: message,
-              ts: { $date: Date.now() },
-              u: {
-                _id: this.userId,
-                username: this.username,
-              },
-            });
           }
         }
       };

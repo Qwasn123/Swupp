@@ -155,7 +155,7 @@
         </div>
       </div>
       <!-- 浮窗 -->
-      <div class="p-4 bg-white border-t" v-if="productDetail || taskDetail">
+      <div class="p-4 bg-white border-t" v-if="productDetail || taskDetail" style="margin-bottom: 60px;">
         <div
           v-if="productDetail || taskDetail"
           class="mb-4 p-3 bg-gray-50 rounded-lg"
@@ -190,7 +190,7 @@
       </div>
 
       <!-- Message input -->
-      <div class="p-4 bg-white border-t" v-if="selectedContact">
+      <div class="p-4 bg-white border-t" style="margin-bottom: 80px;" v-if="selectedContact">
         <div class="flex space-x-2">
           <el-input
             v-model="newMessage"
@@ -266,7 +266,6 @@ const initializeChat = async () => {
       username: currentUsername,
     });
 
-
     // Load direct messages (contacts)
     const directMessages = await rocketChat.loadDirectMessages();
     contacts.value = directMessages
@@ -291,11 +290,10 @@ const initializeChat = async () => {
         };
       });
 
-
-// 订阅用户列表
+    // 订阅用户列表
     contacts.value.forEach((contact) => {
       console.log("Subscribing to room:", contact.id);
-      rocketChat.subscribeToRoom(contact.id)
+      rocketChat.subscribeToRoom(contact.id);
     });
     // Handle route parameter
     const toUsername = route.query.to;

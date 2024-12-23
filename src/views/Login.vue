@@ -1,21 +1,28 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-2xl w-full space-y-8 bg-white p-8 rounded-2xl shadow-soft">
+  <div
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 py-12 px-4 sm:px-6 lg:px-8"
+  >
+    <div
+      class="max-w-2xl w-full space-y-8 bg-white p-8 rounded-2xl shadow-soft"
+    >
       <!-- Logo和标题 -->
       <div class="text-center">
         <img class="mx-auto h-16 w-auto" src="/logo.svg" alt="Logo" />
-        <h2 class="mt-6 font-extrabold bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
+        <h2
+          class="mt-6 font-extrabold bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent"
+        >
           <span class="text-2xl">欢迎使用</span>
           <br />
           <span class="text-5xl tracking-wide">SWUPP</span>
         </h2>
-        <p class="mt-2 text-sm text-gray-600">
-          西南大学校园互助平台
-        </p>
+        <p class="mt-2 text-sm text-gray-600">西南大学校园互助平台</p>
       </div>
 
       <!-- 登录表单 -->
-      <form class="mt-8 space-y-8 max-w-xl mx-auto" @submit.prevent="handleLogin">
+      <form
+        class="mt-8 space-y-8 max-w-xl mx-auto"
+        @submit.prevent="handleLogin"
+      >
         <div class="rounded-md space-y-6">
           <div>
             <label for="studentId" class="sr-only">学号</label>
@@ -56,7 +63,7 @@
             class="relative w-full bg-gradient-to-r from-primary-500 to-secondary-500 border-none h-12 text-lg font-medium"
             :loading="loading"
           >
-            {{ loading ? '登录中...' : '登录' }}
+            {{ loading ? "登录中..." : "登录" }}
           </el-button>
         </div>
       </form>
@@ -65,40 +72,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { User, Lock } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { login } from '../api/auth'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { User, Lock } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { login } from "../api/auth";
 
-const router = useRouter()
-const studentId = ref('')
-const password = ref('')
-const loading = ref(false)
+const router = useRouter();
+const studentId = ref("");
+const password = ref("");
+const loading = ref(false);
 
 const handleLogin = async () => {
   if (!studentId.value || !password.value) {
-    ElMessage.warning('请输入学号和密码')
-    return
+    ElMessage.warning("请输入学号和密码");
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await login(studentId.value, password.value)
+    const response = await login(studentId.value, password.value);
     if (response.data?.success) {
-      ElMessage.success('登录成功')
-      localStorage.setItem('id', response.data?.data?.id)
-      router.replace('/')
+      ElMessage.success("登录成功");
+      localStorage.setItem("id", response.data?.data?.id);
+      localStorage.setItem("username", studentId.value);
+      localStorage.setItem("password", password.value);
+      router.replace("/");
     } else {
-      ElMessage.error(response.data?.message || '登录失败，请检查学号和密码')
+      ElMessage.error(response.data?.message || "登录失败，请检查学号和密码");
     }
   } catch (error) {
-    console.error('Login error:', error)
-    ElMessage.error(error.message || '登录失败，请检查学号和密码')
+    console.error("Login error:", error);
+    ElMessage.error(error.message || "登录失败，请检查学号和密码");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

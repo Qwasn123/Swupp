@@ -7,7 +7,10 @@
       </div>
 
       <!-- 加载状态 -->
-      <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
+      <div
+        v-if="loading"
+        class="flex justify-center items-center min-h-[400px]"
+      >
         <el-skeleton :rows="10" animated />
       </div>
 
@@ -17,10 +20,7 @@
         <div class="p-6 border-b">
           <div class="flex justify-between items-start">
             <h1 class="text-2xl font-bold text-gray-900">{{ task.title }}</h1>
-            <el-tag 
-              :type="getStatusType(task.status)"
-              class="ml-4"
-            >
+            <el-tag :type="getStatusType(task.status)" class="ml-4">
               {{ getStatusText(task.status) }}
             </el-tag>
           </div>
@@ -37,7 +37,10 @@
           <div class="md:col-span-2">
             <div v-if="task.imageUrls" class="mb-6">
               <el-carousel height="400px" :autoplay="false">
-                <el-carousel-item v-for="(url, index) in task.imageUrls.split(',')" :key="index">
+                <el-carousel-item
+                  v-for="(url, index) in task.imageUrls.split(',')"
+                  :key="index"
+                >
                   <el-image
                     :src="url"
                     fit="contain"
@@ -47,11 +50,13 @@
                 </el-carousel-item>
               </el-carousel>
             </div>
-            
+
             <!-- 任务描述 -->
             <div class="mt-6">
               <h2 class="text-lg font-semibold mb-4">任务描述</h2>
-              <p class="text-gray-600 whitespace-pre-wrap">{{ task.description }}</p>
+              <p class="text-gray-600 whitespace-pre-wrap">
+                {{ task.description }}
+              </p>
             </div>
           </div>
 
@@ -70,17 +75,33 @@
               <h3 class="text-sm font-medium text-gray-500 mb-2">任务地点</h3>
               <p class="text-gray-900">{{ task.location }}</p>
             </div>
-
             <!-- 接单按钮 -->
-            <el-button 
-              type="primary" 
-              class="w-full !bg-[#7269ef] hover:!bg-[#8982f1] border-none"
-              :loading="submitting"
-              :disabled="!canAcceptTask(task)"
-              @click="handleAcceptTask"
-            >
-              {{ getActionButtonText(task?.status) }}
-            </el-button>
+            <div class="w-full">
+              <el-button
+                type="primary"
+                class="w-full !bg-[#7269ef] hover:!bg-[#8982f1] border-none"
+                :loading="submitting"
+                :disabled="!canAcceptTask(task)"
+                @click="handleAcceptTask"
+              >
+                {{ getActionButtonText(task?.status) }}
+              </el-button>
+            </div>
+            <div class="w-full mt-4">
+              <!-- 聊天按钮 -->
+              <el-button
+                type="primary"
+                class="w-full !bg-[#1469ef] hover:!bg-[#1482f1] border-none"
+                :disabled="!canAcceptTask(task)"
+                @click="
+                  router.push(
+                    `/messages?to=${task?.publisher?.username}&taskId=${task?.id}`
+                  )
+                "
+              >
+                与发布者聊聊
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
@@ -94,143 +115,151 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
-import axios from 'axios'
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { ArrowLeft } from "@element-plus/icons-vue";
+import axios from "axios";
 
-const route = useRoute()
-const router = useRouter()
-const task = ref(null)
-const loading = ref(true)
-const submitting = ref(false)
+const route = useRoute();
+const router = useRouter();
+const task = ref(null);
+const loading = ref(true);
+const submitting = ref(false);
 
 // 添加返回函数
 const goBack = () => {
-  const lastPage = localStorage.getItem('lastTaskPage') || 1
-  router.push(`/?page=${lastPage}`)
-}
+  const lastPage = localStorage.getItem("lastTaskPage") || 1;
+  router.push(`/?page=${lastPage}`);
+};
 
 // 格式化时间
 const formatTime = (timeStr) => {
-  if (!timeStr) return ''
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+  if (!timeStr) return "";
+  const date = new Date(timeStr);
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 // 获取状态类型
 const getStatusType = (status) => {
   const typeMap = {
-    'PENDING': 'primary',
-    'ACCEPTED': 'success',
-    'IN_PROGRESS': 'warning',
-    'COMPLETED': 'info',
-    'CANCELLED': 'danger',
-    'EXPIRED': 'info'
-  }
-  return typeMap[status] || 'info'
-}
+    PENDING: "primary",
+    ACCEPTED: "success",
+    IN_PROGRESS: "warning",
+    COMPLETED: "info",
+    CANCELLED: "danger",
+    EXPIRED: "info",
+  };
+  return typeMap[status] || "info";
+};
 
 // 获取状态文本
 const getStatusText = (status) => {
   const textMap = {
-    'PENDING': '待接单',
-    'ACCEPTED': '已接单',
-    'IN_PROGRESS': '进行中',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消',
-    'EXPIRED': '已过期'
-  }
-  return textMap[status] || status
-}
+    PENDING: "待接单",
+    ACCEPTED: "已接单",
+    IN_PROGRESS: "进行中",
+    COMPLETED: "已完成",
+    CANCELLED: "已取消",
+    EXPIRED: "已过期",
+  };
+  return textMap[status] || status;
+};
 
 // 检查是否可以接单
 const canAcceptTask = (task) => {
-  return task && task.status === 'PENDING'
-}
+  return task && task.status === "PENDING";
+};
 
 // 获取操作按钮文本
 const getActionButtonText = (status) => {
   const textMap = {
-    'PENDING': '接单',
-    'ACCEPTED': '已被接单',
-    'IN_PROGRESS': '进行中',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消',
-    'EXPIRED': '已过期'
-  }
-  return textMap[status] || '接单'
-}
+    PENDING: "接单",
+    ACCEPTED: "已被接单",
+    IN_PROGRESS: "进行中",
+    COMPLETED: "已完成",
+    CANCELLED: "已取消",
+    EXPIRED: "已过期",
+  };
+  return textMap[status] || "接单";
+};
 
 // 获取任务详情
 const fetchTaskDetail = async () => {
-  const taskId = route.params.id
+  const taskId = route.params.id;
   if (!taskId) {
-    ElMessage.error('任务ID不能为空')
-    return
+    ElMessage.error("任务ID不能为空");
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
   try {
-    const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
+    const token =
+      document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("DoorKey="))
+        ?.split("=")[1] || "";
     const response = await axios.get(`/task/${taskId}`, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.data?.success) {
-      task.value = response.data.data
+      task.value = response.data.data;
     } else {
-      ElMessage.warning(response.data?.message || '获取任务详情失败')
+      ElMessage.warning(response.data?.message || "获取任务详情失败");
     }
   } catch (error) {
-    console.error('获取任务详情失败:', error)
-    ElMessage.error('获取任务详情失败，请稍后重试')
+    console.error("获取任务详情失败:", error);
+    ElMessage.error("获取任务详情失败，请稍后重试");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 接单处理
 const handleAcceptTask = async () => {
-  if (!canAcceptTask(task.value)) return
+  if (!canAcceptTask(task.value)) return;
 
-  submitting.value = true
+  submitting.value = true;
   try {
-    const token = document.cookie.split('; ').find(row => row.startsWith('DoorKey='))?.split('=')[1] || ''
+    const token =
+      document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("DoorKey="))
+        ?.split("=")[1] || "";
     const response = await axios.post(`/task/${task.value.id}/accept`, null, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.data?.success) {
-      ElMessage.success('接单成功')
+      ElMessage.success("接单成功");
       // 刷新任务状态
-      await fetchTaskDetail()
+      await fetchTaskDetail();
     } else {
-      ElMessage.warning(response.data?.message || '接单失败')
+      ElMessage.warning(response.data?.message || "接单失败");
     }
   } catch (error) {
-    console.error('接单失败:', error)
-    ElMessage.error('接单失败，请稍后重试')
+    console.error("接单失败:", error);
+    ElMessage.error("接单失败，请稍后重试");
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
 // 页面加载时获取任务详情
 onMounted(() => {
-  fetchTaskDetail()
-})
+  fetchTaskDetail();
+});
 </script>
 
 <style scoped>

@@ -75,7 +75,7 @@
               <h3 class="text-sm font-medium text-gray-500 mb-2">任务地点</h3>
               <p class="text-gray-900">{{ task.location }}</p>
             </div>
-            <!-- 接单按钮 -->
+            <!-- 接单按钮
             <div class="w-full">
               <el-button
                 type="primary"
@@ -86,7 +86,7 @@
               >
                 {{ getActionButtonText(task?.status) }}
               </el-button>
-            </div>
+            </div> -->
             <div class="w-full mt-4">
               <!-- 聊天按钮 -->
               <el-button
@@ -99,7 +99,7 @@
                   )
                 "
               >
-                与发布者聊聊
+                {{ getActionButtonText(task?.status) }}
               </el-button>
             </div>
           </div>
@@ -180,7 +180,7 @@ const canAcceptTask = (task) => {
 // 获取操作按钮文本
 const getActionButtonText = (status) => {
   const textMap = {
-    PENDING: "接单",
+    PENDING: "和TA聊天",
     ACCEPTED: "已被接单",
     IN_PROGRESS: "进行中",
     COMPLETED: "已完成",

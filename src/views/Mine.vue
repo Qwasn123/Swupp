@@ -55,21 +55,35 @@
         <el-tabs class="custom-tabs">
           <!-- 我的任务 -->
           <el-tab-pane label="我的任务">
+            <div class="mb-4">
+              <el-radio-group v-model="taskType" size="large">
+                <el-radio-button label="published">我发布的</el-radio-button>
+                <el-radio-button label="accepted">我接取的</el-radio-button>
+              </el-radio-group>
+            </div>
             <div class="space-y-4">
-              <div v-for="task in myTasks" :key="task.id"
+              <div v-for="task in displayTasks" :key="task.id"
                    class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                 <div class="flex justify-between items-start">
                   <div>
                     <h3 class="text-lg font-semibold">{{ task.title }}</h3>
                     <p class="text-gray-600 mt-1">{{ task.description }}</p>
                     <div class="mt-2 text-sm text-gray-500">
-                      状态：{{ task.status }}
+                      状态：{{ getStatusText(task.status) }}
+                    </div>
+                    <div class="mt-2 text-sm text-gray-500">
+                      <span v-if="taskType === 'accepted'">发布者：{{ task.publisher?.nickname || task.publisher?.username }}</span>
+                      <span v-else>接单者：{{ task.accepter?.nickname || task.accepter?.username || '暂无' }}</span>
                     </div>
                   </div>
                   <div class="text-right">
-                    <div class="text-lg font-bold text-primary-600">￥{{ task.price }}</div>
+                    <div class="text-lg font-bold text-primary-600">￥{{ task.reward }}</div>
                     <div class="mt-2">
-                      <el-button size="small" type="primary" v-if="task.status === '进行中'">
+                      <el-button 
+                        size="small" 
+                        type="primary" 
+                        @click="router.push(`/task/${task.id}`)"
+                      >
                         查看详情
                       </el-button>
                     </div>
@@ -124,7 +138,7 @@
     </div>
 
     <!-- 编辑资料对话框 -->
-    <init-user-dialog 
+    <init-user-dialog
       v-if="showEditDialog"
       v-model="showEditDialog"
       :initial-nickname="userNickname"
@@ -135,9 +149,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'
 import InitUserDialog from '../components/InitUserDialog.vue'
+import { useRouter } from 'vue-router'
 
 // 用户信息
 const userAvatar = ref(localStorage.getItem('userAvatar'))
@@ -152,34 +168,25 @@ const stats = ref({
 })
 
 // 我的任务列表
-const myTasks = ref([
-  {
-    id: 1,
-    title: '帮取快递',
-    description: '帮忙到菜鸟驿站取快递',
-    price: 5,
-    status: '进行中'
-  },
-  // 更多任务...
-])
+const publishedTasks = ref([])
+const acceptedTasks = ref([])
 
 // 我的宝贝列表
-const myItems = ref([
-  {
-    id: 1,
-    title: '二手书籍',
-    price: 20,
-    image: 'https://picsum.photos/300/300',
-    status: '在售'
-  },
-  // 更多商品...
-])
+const myItems = ref([])
+
+// 展示的任务列表
+const displayTasks = computed(() => {
+  return taskType.value === 'published' ? publishedTasks.value : acceptedTasks.value
+})
 
 // 设置
 const settings = ref({
   notifications: true,
   privacy: false
 })
+
+// 任务类型
+const taskType = ref('published')
 
 // 处理用户信息更新
 const handleUserInfoUpdated = (userInfo) => {
@@ -190,10 +197,104 @@ const handleUserInfoUpdated = (userInfo) => {
   ElMessage.success('更新成功')
 }
 
+const getMyBoughtItems = async () => {
+  try {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("DoorKey="))
+      ?.split("=")[1] || "";
+
+    const response = await axios.get("/secondhand/orders/seller", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data?.success) {
+      myItems.value = response.data.data;
+    } else {
+      ElMessage.warning(response.data?.message || "获取已购买商品失败");
+    }
+  } catch (error) {
+    console.error("获取已购买商品失败:", error);
+    ElMessage.error("获取已购买商品失败，请稍后重试");
+  }
+};
+
+const getMyPublishedTasks = async () => {
+  try {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("DoorKey="))
+      ?.split("=")[1] || "";
+
+    const response = await axios.get("/task/myPublished", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data?.success) {
+      publishedTasks.value = response.data.data;
+    } else {
+      ElMessage.warning(response.data?.message || "获取已发布任务失败");
+    }
+  } catch (error) {
+    console.error("获取已发布任务失败:", error);
+    ElMessage.error("获取已发布任务失败，请稍后重试");
+  }
+};
+
+const getMyAcceptedTasks = async () => {
+  try {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("DoorKey="))
+      ?.split("=")[1] || "";
+
+    const response = await axios.get("/task/myAccepted", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data?.success) {
+      acceptedTasks.value = response.data.data;
+    } else {
+      ElMessage.warning(response.data?.message || "获取已接取任务失败");
+    }
+  } catch (error) {
+    console.error("获取已接取任务失败:", error);
+    ElMessage.error("获取已接取任务失败，请稍后重试");
+  }
+};
+
+const getStatusText = (status) => {
+  const statusMap = {
+    PENDING: '待接单',
+    ACCEPTED: '已接单',
+    IN_PROGRESS: '进行中',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+    EXPIRED: '已过期'
+  }
+  return statusMap[status] || status
+}
+
+const router = useRouter()
+
+watch(taskType, () => {
+  if (taskType.value === 'published') {
+    getMyPublishedTasks()
+  } else {
+    getMyAcceptedTasks()
+  }
+})
+
 onMounted(() => {
-  // TODO: 获取用户统计数据
-  // TODO: 获取任务列表
-  // TODO: 获取商品列表
+  getMyPublishedTasks()
+  getMyAcceptedTasks()
+  getMyBoughtItems()
 })
 </script>
 

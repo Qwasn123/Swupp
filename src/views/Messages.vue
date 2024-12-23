@@ -179,7 +179,7 @@
             <div class="flex mt-2 items-center">
               <p class="text-sm text-gray-600 mr-3">
                 <el-button type="primary" v-if="productDetail">购买</el-button>
-                <el-button type="primary" v-if="taskDetail">接单</el-button>
+                <el-button type="primary" v-if="taskDetail" @click="acceptTask">接单</el-button>
               </p>
               <p class="text-sm text-gray-600">
                 <el-button type="primary" @click="sendInfo">发送</el-button>
@@ -222,7 +222,7 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { rocketChat } from "../services/rocketChat";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import axios from "axios";
 import { Tickets, Goods } from "@element-plus/icons-vue";
 
@@ -615,6 +615,43 @@ const scrollToBottom = async () => {
   await nextTick();
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
+};
+
+const acceptTask = async () => {
+  if (!taskDetail.value) {
+    ElMessage.warning("请先选择任务");
+    return;
+  }
+  try {
+    const token =
+      document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("DoorKey="))
+        ?.split("=")[1] || "";
+    const response = await axios.post(`/task/${taskDetail.value.id}/accept`, {
+      taskId: taskDetail.value.id,
+      accepterId: localStorage.getItem("id"),
+      contactInformationId: 1,
+      isPaid: false,
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      }
+    });
+    ElMessage.success("任务接受成功");
+    ElMessageBox.alert(
+      '现在可以和商家互换联系方式啦~',
+      '提示',
+      {
+        confirmButtonText: '好的',
+        type: 'success',
+      }
+    );
+  } catch (error) {
+    console.error("Failed to accept task:", error);
+    ElMessage.error("任务接受失败，请稍后重试");
   }
 };
 
